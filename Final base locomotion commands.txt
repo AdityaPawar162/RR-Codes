@@ -1,0 +1,12 @@
+CytronMD motor1(PWM_DIR, 5, 32);
+CytronMD motor2(PWM_DIR, 6, 34);
+CytronMD motor3(PWM_DIR, 3, 36);
+
+
+ m1 =  M1 + pid ;
+ m2 = -M2 + pid  ;
+ m3 = M3 - pid   ;
+
+ motor1.setSpeed(-m1);
+ motor2.setSpeed(-m2);
+ motor3.setSpeed(m3);
