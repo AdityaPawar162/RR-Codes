@@ -10,6 +10,7 @@ MPU6050 mpu;
 #include "CytronMotorDriver.h"
 #include <ODriveArduino.h>
 
+
 template<class T> inline Print& operator <<(Print &obj, T arg) {
   obj.print(arg);
   return obj;
@@ -31,8 +32,8 @@ ODriveArduino odrive(odrive_serial);
 
 // Configure the motor driver.
 CytronMD motor1(PWM_DIR, 5, 32);
-CytronMD motor2(PWM_DIR, 3, 34);
-CytronMD motor3(PWM_DIR, 6, 36);
+CytronMD motor2(PWM_DIR, 6, 34);
+CytronMD motor3(PWM_DIR, 3, 36);
 //************************PID GAINS******************//
 float Kp = 19;// 6;//13;;8
 float Ki =  0.000;//0.002;//0.003;//0.003
@@ -137,7 +138,7 @@ void loop()
 
 
 
-     float Buttons = JoyEvents.bu;
+  float Buttons = JoyEvents.bu;
   float rxa = JoyEvents.rx;
   float rya = JoyEvents.ry;
   float lxa =  JoyEvents.lx;
@@ -164,6 +165,7 @@ void loop()
 
   rxa = rxa - 128;
   rya = -rya + 127;
+  rya = -rya;
 
   int g = rxa - 30;
   int h = rya - 30;
@@ -194,7 +196,8 @@ void loop()
 
 
   if ( start == 1 && flot_auto == 0)
-  { var0 = -20;
+  { 
+    var0 = -20;
     var1 = 20;
     odrive.SetVelocity(0,var0);
     odrive.SetVelocity(1,var1);
@@ -233,7 +236,6 @@ void loop()
     if (gpad == 4 && flag12 == 0)
     {
       var0 -= 0.1;
-
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
       flag12 = 1;
@@ -242,15 +244,12 @@ void loop()
     if (gpad == 9 && flag12 == 1)
     {
       flag12 = 0;
-
     }
 
     //    ----------------------------------Increment of 1axis---
     if (gpad == 2 && flag13 == 0)
     {
-
       var0 += 1;
-
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
       flag13 = 1;
