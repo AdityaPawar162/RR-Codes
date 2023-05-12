@@ -1,4 +1,4 @@
-//*************************LIBRARIES*****************//
+//........//*************************LIBRARIES*****************//
 #include <Wire.h>
 #include <MPU6050.h>
 MPU6050 mpu;
@@ -9,7 +9,8 @@ MPU6050 mpu;
 #include "hidjoystickrptparser.h"
 #include "CytronMotorDriver.h"
 #include <ODriveArduino.h>
-
+#include<SoftwareSerial.h>
+#include<SabertoothSimplified.h>
 
 template<class T> inline Print& operator <<(Print &obj, T arg) {
   obj.print(arg);
@@ -28,6 +29,9 @@ JoystickEvents JoyEvents;
 JoystickReportParser Joy(&JoyEvents);
 ODriveArduino odrive(odrive_serial);
 
+SoftwareSerial SWSerial(NOT_A_PIN, 4);
+SabertoothSimplified ST(SWSerial);
+
 
 
 // Configure the motor driver.
@@ -44,7 +48,7 @@ int M1 , M2 , M3, m1, m2, m3;
 unsigned long timer = 0;
 unsigned long timer1 = 0;
 unsigned long timer2 = 0;
-float timeStep = 0.0153;
+float timeStep = 0.018998;
 float yaw = 0;
 int pre_error = 0;
 int setpoint = 0 ;
@@ -57,6 +61,11 @@ float rate, incre, PRO, DER, INT, output, pid ;
 int Base_M ;
 int rot_speed = 30 ;
 int rotation_counter, rot_counter, rot_flag = 0;
+
+int Pick_M = 0, up_speed = 35, down_speed = -30 ;
+
+int atuate_flag = 0;
+
 //______________________________________
 
 int flag911 = 0;
@@ -91,6 +100,8 @@ void setup()
 {
   //  delay(2000);
   Serial.begin(115200);
+
+  SWSerial.begin(9600);
   // Initialize MPU6050
   while (!mpu.begin(MPU6050_SCALE_2000DPS, MPU6050_RANGE_2G))
   {
@@ -111,6 +122,7 @@ void setup()
   delay(200);
   pinMode(24, OUTPUT);
   pinMode(22, OUTPUT);
+  pinMode(26, OUTPUT);
   if (!Hid.SetReportParser(0, &Joy))
     ErrorMessage<uint8_t > (PSTR("SetReportParser"), 1);
 
@@ -125,11 +137,18 @@ void setup()
   Serial.println("Setting parameters...");
   odrive.SetVelocity(0, 0);
   odrive.SetVelocity(1, 0);
+
+  delay(1000);
+
+  //  ST.motor(1, 0);
+
   //________________________________________
 }
 
 void loop()
 {
+  ST.motor(1, Pick_M);
+
   timer = millis();
   Vector norm = mpu.readNormalizeGyro();
   yaw = yaw + norm.ZAxis * timeStep;
@@ -166,6 +185,19 @@ void loop()
   rxa = rxa - 128;
   rya = -rya + 127;
   rya = -rya;
+  lxa = lxa - 128;
+  lya = -lya + 127;
+  lya = -lya;
+
+  int hor = lxa - 30;
+  int ver = lya - 30;
+
+  if (lxa < 30 && lxa > -31)hor = 0;
+  if (lya < 30 && lya > -31)ver = 0;
+  if (hor < -30)hor += 60;
+  if (ver < -30)ver += 60;
+  hor = map(hor, -128, 128, -45, 45);
+  ver = map(ver, -128, 128, -45, 45);
 
   int g = rxa - 30;
   int h = rya - 30;
@@ -182,6 +214,8 @@ void loop()
   if (rxa < -30) {
     g = g + 60;
   }
+  g += hor;
+  h += ver;
 
   int c = square(g);
   int d = square(h);
@@ -196,15 +230,14 @@ void loop()
 
 
   if ( start == 1 && flot_auto == 0)
-  { 
-    var0 = -20;
+  { var0 = -20;
     var1 = 20;
-    odrive.SetVelocity(0,var0);
-    odrive.SetVelocity(1,var1);
+    odrive.SetVelocity(0, var0);
+    odrive.SetVelocity(1, var1);
     cnt++;
     flot_auto = 1 ;
   }
-    
+
   if ( start == 0 && flot_auto == 1 )
   {
     flot_auto = 0 ;
@@ -236,6 +269,7 @@ void loop()
     if (gpad == 4 && flag12 == 0)
     {
       var0 -= 0.1;
+
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
       flag12 = 1;
@@ -244,12 +278,15 @@ void loop()
     if (gpad == 9 && flag12 == 1)
     {
       flag12 = 0;
+
     }
 
     //    ----------------------------------Increment of 1axis---
     if (gpad == 2 && flag13 == 0)
     {
+
       var0 += 1;
+
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
       flag13 = 1;
@@ -316,27 +353,27 @@ void loop()
 
   if (cnt1 % 2 == 0)
   {
-    digitalWrite(24, HIGH);
+    digitalWrite(22, HIGH);
   }
   if (cnt1 % 2 == 1)
   {
-    digitalWrite(24, LOW);
+    digitalWrite(22, LOW);
   }
 
   // *************************************** CLAW ***
 
   if (R1 == 1 && flag611 == 0)//Use flag611 for R1
   {
-    digitalWrite(22, HIGH);
+    digitalWrite(26, HIGH);
     flag611 = 1;
   }
   if (R1 == 0 && flag611 == 1)
   {
-    digitalWrite(22, LOW);
+    digitalWrite(26, LOW);
     flag611 = 0;
   }
 
- 
+
 
   if ( L2 == 1 || R2 == 1 )
   {
@@ -353,9 +390,24 @@ void loop()
     Base_M = 0;
   }
 
+  //  *****************************************  Picking Mechanism
+
+  if (gpad == 0 || gpad == 4) {
+    if (gpad == 0) {
+      Pick_M = up_speed;
+    }
+    if (gpad == 4) {
+      Pick_M = down_speed;
+    }
+  }
+  else {
+    Pick_M = 0;
+  }
+
+
   // *************************************** ANGLE LOCOMOTION (90)***
 
-  
+
 
 
   //  ============ (90 long button press)
@@ -366,12 +418,14 @@ void loop()
     Kd =  30;//37;//30
     setpoint = setpoint + 90;
     flag3 = 1;
+    Serial.print("in 1");
   }
   if (blue  == 0 && red == 0 && flag3 == 1)
   { Kp = 15;// 6;//13;;8
     Ki =  0.00;//0.002;//0.003;//0.003
     Kd =  60;//37;//30
     flag3 = 0;
+    Serial.print("In 2");
 
   }
 
@@ -382,12 +436,14 @@ void loop()
     Kd =  30;//37;//30
     setpoint = setpoint - 90;
     flag4 = 1;
+    Serial.print("In 3");
   }
   if (blue  == 0 && red == 0 && flag4 == 1)
   { Kp = 15;// 6;//13;;8
     Ki =  0.00;//0.002;//0.003;//0.003
     Kd =  60;//37;//30
     flag4 = 0;
+    Serial.print("In 4");
   }
 
   //************************************* RAMP MODE *******************
@@ -418,7 +474,7 @@ void loop()
   INT = Ki * (incre);
   output = PRO + DER + INT ;
 
-  //  pid = constrain(output , -80, 80 );
+  //    pid = constrain(output , -100,100);
 
 
   if (green == 1 && green_flag == 0)
@@ -439,19 +495,22 @@ void loop()
     Serial.print("| pid is zero |");
   }
   if (green_cnt % 2 == 0) {
-    pid = constrain(output, -80, 80);
+    pid = constrain(output, -100, 100);
     Serial.print("| PID applied |");
   }
 
   M1 =  -(r * (sin((pi / 2 - angle) )) * 1.15);
   M2 =  (r * (sin((7 * pi / 6 - angle) )) * 1.15);
-  M3 =  -(r * (sin((33 * pi / 18 - angle) )) * 1.15);
+  M3 =  (r * (sin((33 * pi / 18 - angle) )) * 1.15);
   M1 = map(M1, 0, 91, 0, 127);
   M2 = map(M2, 0, 91, 0, 127);
   M3 = map(M3, 0, 91, 0, 127);
   if (cnt3 % 2 == 0) {
-    Serial.print("| In 100 constraint |");
-    var_100 = 100;
+    Serial.print("| In 210 constraint |");
+    M1 = map(M1, 0, 91, 0, 210);
+    M2 = map(M2, 0, 91, 0, 210);
+    M3 = map(M3, 0, 91, 0, 210);
+    var_100 = 210;
   }
 
   if (cnt3 % 2 == 1) {
@@ -463,14 +522,14 @@ void loop()
     Kp = 16;
     Ki = 0.001;
     Kd = 32;
-    var_100 = 240;
+    var_100 = 160;
 
   }
 
   if ( rot_flag == 0 )
   {
 
-    Kp = 16 ;
+    Kp = 24 ;
     Ki = 0.000001 ;
     Kd = 35  ;
 
@@ -511,18 +570,29 @@ void loop()
   M2 = constrain(M2, -var_100, var_100);
   M3 = constrain(M3, -var_100, var_100);
 
-  m1 =  M1 + pid  + Base_M ;
-  m2 = -M2 + pid  + Base_M ;
-  m3 = -M3 - pid  - Base_M ;
 
- 
+  m1 =  M1 + pid  + Base_M ;//  m1 =  M1 + pid  + Base_M ;
+  m2 = -M2 + pid  + Base_M ;//m2 = -M2 + pid  + Base_M ;
+  m3 = M3 - pid  - Base_M ;//m3 = M3 - pid  - Base_M
+
+
+
   motor1.setSpeed(-m1);
-  motor2.setSpeed(m2);
-  motor3.setSpeed(-m3);
- 
-  Serial.print("\t error=");
-  Serial.print( error );
+  motor2.setSpeed(-m2);
+  motor3.setSpeed(m3);
 
+  Serial.print("\t lya=");
+  Serial.print( lya );
+  Serial.print(" lxa ");
+  Serial.print(lxa);
+
+  Serial.print(" hor =");
+  Serial.print( hor);
+  Serial.print(" ver ");
+  Serial.print(ver);
+
+  Serial.print("\t pid=");
+  Serial.print( pid );
 
   Serial.print("\t pidM1=");
   Serial.print( m1 );
