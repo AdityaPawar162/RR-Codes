@@ -39,9 +39,9 @@ CytronMD motor1(PWM_DIR, 5, 32);
 CytronMD motor2(PWM_DIR, 6, 34);
 CytronMD motor3(PWM_DIR, 3, 36);
 //************************PID GAINS******************//
-float Kp = 19;// 6;//13;;8
-float Ki =  0.000;//0.002;//0.003;//0.003
-float Kd =  40;//37;//30
+float Kp ;// 6;//13;;8
+float Ki ;//0.002;//0.003;//0.003
+float Kd ;//37;//30
 
 //*********************DECLARATIONS************//
 int M1 , M2 , M3, m1, m2, m3;
@@ -412,16 +412,16 @@ void loop()
 
   //  ============ (90 long button press)
 
-  if (blue == 1 && flag3 == 0 && red == 0)
-  { Kp = 6;// 6;//13;;8
+  if (blue == 1 && flag3 == 0 )
+  { Kp = 16;// 6;//13;;8
     Ki =  0.004;//0.002;//0.003;//0.003
-    Kd =  30;//37;//30
-    setpoint = setpoint + 90;
+    Kd =  50;//37;//30
+    setpoint = setpoint + 84;
     flag3 = 1;
     Serial.print("in 1");
   }
-  if (blue  == 0 && red == 0 && flag3 == 1)
-  { Kp = 15;// 6;//13;;8
+  if (blue  == 0 &&  flag3 == 1)
+  { Kp = 16;// 6;//13;;8
     Ki =  0.00;//0.002;//0.003;//0.003
     Kd =  60;//37;//30
     flag3 = 0;
@@ -429,16 +429,16 @@ void loop()
 
   }
 
-  if (red == 1 && flag4 == 0 && blue == 0)
+  if (red == 1 && flag4 == 0 )
   {
-    Kp = 6;// 6;//13;;8
+    Kp = 16;// 6;//13;;8
     Ki =  0.004;//0.002;//0.003;//0.003
-    Kd =  30;//37;//30
-    setpoint = setpoint - 90;
+    Kd =  50;//37;//30
+    setpoint = setpoint - 84;
     flag4 = 1;
     Serial.print("In 3");
   }
-  if (blue  == 0 && red == 0 && flag4 == 1)
+  if (red == 0 && flag4 == 1)
   { Kp = 15;// 6;//13;;8
     Ki =  0.00;//0.002;//0.003;//0.003
     Kd =  60;//37;//30
@@ -505,7 +505,7 @@ void loop()
   M1 = map(M1, 0, 91, 0, 127);
   M2 = map(M2, 0, 91, 0, 127);
   M3 = map(M3, 0, 91, 0, 127);
-  if (cnt3 % 2 == 0) {
+  if (cnt3 % 2 == 0 && hor ==0 &&ver ==0) {
     Serial.print("| In 210 constraint |");
     M1 = map(M1, 0, 91, 0, 210);
     M2 = map(M2, 0, 91, 0, 210);
@@ -526,7 +526,7 @@ void loop()
 
   }
 
-  if ( rot_flag == 0 )
+  if ( rot_flag == 0 && blue != 1 && red != 1 )
   {
 
     Kp = 24 ;
