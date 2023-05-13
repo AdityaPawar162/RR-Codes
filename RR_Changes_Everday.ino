@@ -339,12 +339,12 @@ void loop()
 
   // *************************************** VERTICAL ANGLE ***
 
-  if (L1 == 1 && flag511 == 0)//Use flag511 for L1
+  if (back == 1 && flag511 == 0)//Use flag511 for L1
   {
     cnt1++;
     flag511 = 1;
   }
-  if (L1 == 0 && flag511 == 1)
+  if (back == 0 && flag511 == 1)
   {
     flag511 = 0;
   }
@@ -353,11 +353,11 @@ void loop()
 
   if (cnt1 % 2 == 0)
   {
-    digitalWrite(22, HIGH);
+    digitalWrite(24, HIGH);
   }
   if (cnt1 % 2 == 1)
   {
-    digitalWrite(22, LOW);
+    digitalWrite(24, LOW);
   }
 
   // *************************************** CLAW ***
@@ -392,7 +392,7 @@ void loop()
 
   //  *****************************************  Picking Mechanism
 
-  if (gpad == 0 || gpad == 4) {
+  if ((gpad == 0 || gpad == 4) && cnt%2 != 1) {
     if (gpad == 0) {
       Pick_M = up_speed;
     }
@@ -507,10 +507,10 @@ void loop()
   M3 = map(M3, 0, 91, 0, 127);
   if (cnt3 % 2 == 0 && hor ==0 &&ver ==0) {
     Serial.print("| In 210 constraint |");
-    M1 = map(M1, 0, 91, 0, 210);
-    M2 = map(M2, 0, 91, 0, 210);
-    M3 = map(M3, 0, 91, 0, 210);
-    var_100 = 210;
+    M1 = map(M1, 0, 91, 0, 230);
+    M2 = map(M2, 0, 91, 0, 230);
+    M3 = map(M3, 0, 91, 0, 230);
+    var_100 = 230;
   }
 
   if (cnt3 % 2 == 1) {
