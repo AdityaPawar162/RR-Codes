@@ -66,6 +66,9 @@ int Pick_M = 0, up_speed = 35, down_speed = -30 ;
 
 int atuate_flag = 0;
 
+int load_flag = 0;
+int load_count = 0;
+
 //______________________________________
 
 int flag911 = 0;
@@ -392,17 +395,31 @@ void loop()
 
   //  *****************************************  Picking Mechanism
 
-  if ((gpad == 0 || gpad == 4) && cnt%2 != 1) {
+  if ((gpad == 2 || gpad == 0 || gpad == 4) && cnt%2 != 1) {
     if (gpad == 0) {
       Pick_M = up_speed;
     }
     if (gpad == 4) {
       Pick_M = down_speed;
     }
+    if(gpad == 2 && load_flag == 0)
+    {
+      load_count++;
+      load_flag = 1;
+    }
+    
   }
   else {
     Pick_M = 0;
+    load_flag = 0;
   }
+
+if(load_count % 2 == 0 && load_count != 0){
+  digitalWrite(22,HIGH);
+}
+if(load_count % 2 != 0){
+  digitalWrite(22,LOW);
+}
 
 
   // *************************************** ANGLE LOCOMOTION (90)***
