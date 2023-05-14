@@ -69,6 +69,14 @@ int atuate_flag = 0;
 int load_flag = 0;
 int load_count = 0;
 
+int slow_flag = 0;
+int slow_opposite_flag = 0;
+int slow_speed_m2 =0;
+int slow_speed_m3 =0;
+int m2_speed = 40;
+int m3_speed = 40;
+
+
 //______________________________________
 
 int flag911 = 0;
@@ -224,7 +232,7 @@ void loop()
   int d = square(h);
   float r = sqrt(c + d);
 
-  float angle = atan2 (h, g) ;
+  float angle = atan2 (h, g);
   float theta = angle * (180 / pi);
 
 
@@ -255,7 +263,7 @@ void loop()
     //    ----------------------------------Increment of 0axis---
     if (gpad == 0 && flag11 == 0)
     {
-      var0 += 0.1;
+      var0 -= 0.1;
 
 
       odrive.SetVelocity(0, var0);
@@ -271,7 +279,7 @@ void loop()
 
     if (gpad == 4 && flag12 == 0)
     {
-      var0 -= 0.1;
+      var0 += 0.1;
 
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
@@ -288,7 +296,7 @@ void loop()
     if (gpad == 2 && flag13 == 0)
     {
 
-      var0 += 1;
+      var0 -= 1;
 
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
@@ -304,7 +312,7 @@ void loop()
     if (gpad == 6 && flag14 == 0)
     {
 
-      var0 -= 1;
+      var0 += 1;
 
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
@@ -395,31 +403,35 @@ void loop()
 
   //  *****************************************  Picking Mechanism
 
-  if ((gpad == 2 || gpad == 0 || gpad == 4) && cnt%2 != 1) {
-    if (gpad == 0) {
-      Pick_M = up_speed;
-    }
-    if (gpad == 4) {
-      Pick_M = down_speed;
-    }
-    if(gpad == 2 && load_flag == 0)
-    {
-      load_count++;
-      load_flag = 1;
-    }
-    
-  }
-  else {
-    Pick_M = 0;
-    load_flag = 0;
-  }
+  //  if ((gpad == 2 || gpad == 0 || gpad == 4) && cnt%2 != 1) {
+  //    if (gpad == 0) {
+  //      Pick_M = up_speed;
+  //    }
+  //    if (gpad == 4) {
+  //      Pick_M = down_speed;
+  //    }
+  //    if(gpad == 2 && load_flag == 0)
+  //    {
+  //      load_count++;
+  //      load_flag = 1;
+  //    }
+  //
+  //  }
+  //  else {
+  //    Pick_M = 0;
+  //    load_flag = 0;
+  //  }
 
-if(load_count % 2 == 0 && load_count != 0){
-  digitalWrite(22,HIGH);
-}
-if(load_count % 2 != 0){
-  digitalWrite(22,LOW);
-}
+
+  
+
+ 
+  if (load_count % 2 == 0 && load_count != 0) {
+    digitalWrite(22, HIGH);
+  }
+  if (load_count % 2 != 0) {
+    digitalWrite(22, LOW);
+  }
 
 
   // *************************************** ANGLE LOCOMOTION (90)***
@@ -476,8 +488,26 @@ if(load_count % 2 != 0){
     flag711 = 0;
   }
 
+//  ***************************** SLOW LOCOMOTION ************************
+if(gpad == 4 && slow_flag == 0){
+     slow_speed_m2 = -m2_speed;
+     slow_speed_m3 = -m3_speed;
+     
+     slow_flag = 1;
+}
+if(gpad == 9 && (slow_flag = 1 || slow_opposite_flag == 1))
+{
+  slow_speed_m2 = 0;
+  slow_speed_m3 = 0;
+  slow_flag = 0;
+  slow_opposite_flag = 0;
+}
 
-
+if(gpad == 0 && slow_opposite_flag == 0){
+  slow_speed_m2 = m2_speed;
+  slow_speed_m3 = m3_speed;
+  slow_opposite_flag = 1;
+}
 
   //************************************* EQUATION OF LOCOMOTION****
 
@@ -522,7 +552,7 @@ if(load_count % 2 != 0){
   M1 = map(M1, 0, 91, 0, 127);
   M2 = map(M2, 0, 91, 0, 127);
   M3 = map(M3, 0, 91, 0, 127);
-  if (cnt3 % 2 == 0 && hor ==0 &&ver ==0) {
+  if (cnt3 % 2 == 0 && hor == 0 && ver == 0) {
     Serial.print("| In 210 constraint |");
     M1 = map(M1, 0, 91, 0, 230);
     M2 = map(M2, 0, 91, 0, 230);
@@ -588,9 +618,9 @@ if(load_count % 2 != 0){
   M3 = constrain(M3, -var_100, var_100);
 
 
-  m1 =  M1 + pid  + Base_M ;//  m1 =  M1 + pid  + Base_M ;
-  m2 = -M2 + pid  + Base_M ;//m2 = -M2 + pid  + Base_M ;
-  m3 = M3 - pid  - Base_M ;//m3 = M3 - pid  - Base_M
+  m1 =  M1 + pid  + Base_M;//  m1 =  M1 + pid  + Base_M ;
+  m2 = -M2 + pid  + Base_M+slow_speed_m2 ;//m2 = -M2 + pid  + Base_M ;
+  m3 = M3 - pid  - Base_M+slow_speed_m3;//m3 = M3 - pid  - Base_M
 
 
 
