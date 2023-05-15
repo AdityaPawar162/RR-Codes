@@ -71,8 +71,12 @@ int load_count = 0;
 
 int slow_flag = 0;
 int slow_opposite_flag = 0;
-int slow_speed_m2 =0;
-int slow_speed_m3 =0;
+int slow_side_flag = 0;
+int slow_opposite_side_flag = 0;
+int slow_speed_m1 = 0;
+int slow_speed_m2 = 0;
+int slow_speed_m3 = 0;
+int m1_speed = 35;
 int m2_speed = 40;
 int m3_speed = 40;
 
@@ -100,8 +104,9 @@ int cnt1 = 1;//For Vertical Angle DCV
 int cnt2 = 0;//locomotion angle
 int cnt3 = 0;//Temp variable
 int cnt4 = 0;
-int green_flag = 0;
-int green_cnt = 0;
+int red_flag = 0;
+int red_cnt = 0;
+int throw_flag = 0;
 
 
 //_______________________________________
@@ -240,8 +245,8 @@ void loop()
 
 
 
-  if ( start == 1 && flot_auto == 0)
-  { var0 = -20;
+  if ( start == 1 && flot_auto == 0) {
+    var0 = -20;
     var1 = 20;
     odrive.SetVelocity(0, var0);
     odrive.SetVelocity(1, var1);
@@ -257,26 +262,19 @@ void loop()
   //  Serial.print(cnt);
 
 
-  if (cnt % 2 == 1 )
+  if (cnt % 2 == 1 )              // **************************************************** In Start Condition
   {
 
+    //   ********************************************************* BLDC START ***********************************
     //    ----------------------------------Increment of 0axis---
     if (gpad == 0 && flag11 == 0)
     {
       var0 -= 0.1;
-
-
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
       flag11 = 1;
       Serial.print(" Increment of 0axis");
     }
-    if (gpad == 9 && flag11 == 1)
-    {
-      flag11 = 0;
-
-    }
-
     if (gpad == 4 && flag12 == 0)
     {
       var0 += 0.1;
@@ -286,146 +284,220 @@ void loop()
       flag12 = 1;
       Serial.print(" Decrement of 0axis");
     }
-    if (gpad == 9 && flag12 == 1)
-    {
-      flag12 = 0;
-
-    }
 
     //    ----------------------------------Increment of 1axis---
     if (gpad == 2 && flag13 == 0)
-    {
-
-      var0 -= 1;
-
-      odrive.SetVelocity(0, var0);
-      odrive.SetVelocity(1, -var0);
-      flag13 = 1;
-      Serial.print(" Increment of 1axis");
-    }
-    if (gpad == 9 && flag13 == 1)
-    {
-
-      flag13 = 0;
-    }
-    //    ----------------------------------Decrement of 1axis---
-    if (gpad == 6 && flag14 == 0)
     {
 
       var0 += 1;
 
       odrive.SetVelocity(0, var0);
       odrive.SetVelocity(1, -var0);
+      flag13 = 1;
+      Serial.print(" Increment of 1axis");
+    }
+    //    ----------------------------------Decrement of 1axis---
+    if (gpad == 6 && flag14 == 0)
+    {
+
+      var0 -= 1;
+
+      odrive.SetVelocity(0, var0);
+      odrive.SetVelocity(1, -var0);
       flag14 = 1;
       Serial.print(" Decrement of 1axis");
     }
-    if (gpad == 9 && flag14 == 1)
-    {
+    if (gpad == 9 && flag11 == 1)   flag11 = 0;
+    if (gpad == 9 && flag12 == 1)   flag12 = 0;
+    if (gpad == 9 && flag14 == 1)   flag14 = 0;
+    if (gpad == 9 && flag13 == 1)   flag13 = 0;
 
-      flag14 = 0;
-    }
+    //********************************************************* BLDC OVER ************************************
     Serial.print(" In start");
+
+    // *******************************************    Yaw Zero Condition ****************************************
+    if (red == 1 && red_flag == 0)
+    {
+      red_cnt++;
+      red_flag = 1;
+    }
+    if (red == 0 && red_flag == 1)
+    {
+      red_flag = 0;
+    }
+    Serial.print(" red_cnt: ");
+    Serial.print(red_cnt);
+
+    if (red_cnt % 2 == 1) {
+      pid = 0;
+      Serial.print("| pid is zero - Start |");
+    }
+
+    //******************************************** Grab R1 ******************************************
+    if (R1 == 1 && load_flag == 0) {
+      load_count++;
+      load_flag = 1;
+    }
+    if (R1 == 0 && load_flag == 1) {
+      load_flag = 0;
+    }
+
+    // *************************************** VERTICAL ANGLE ***
+
+    if (back == 1 && flag511 == 0)//Use flag511 for L1
+    {
+      cnt1++;
+      flag511 = 1;
+    }
+    if (back == 0 && flag511 == 1)
+    {
+      flag511 = 0;
+    }
+    Serial.print(" cnt1 ");
+    Serial.print(cnt1);
+    if (cnt1 % 2 == 0)   digitalWrite(24, HIGH);
+    if (cnt1 % 2 == 1)  digitalWrite(24, LOW);
+
+    // ***************************************** Motor Pick  *************
+    if ( yellow == 1 || green == 1 ) {
+      if (yellow == 1) {
+        Pick_M = up_speed;
+      }
+      if (green == 1) {
+        Pick_M = down_speed;
+      }
+    }
+    else
+    {
+      Pick_M = 0;
+    }
+     //**************************************** Throwing ******************
+     if(blue == 1 && throw_flag == 0){
+      digitalWrite(26,HIGH);
+      throw_flag = 1;
+     }
+     if(blue == 0 && throw_flag == 1){
+      digitalWrite(26,LOW);
+      throw_flag = 0;
+     }
+
+
+
+    // ------------------------------------------- Start over ----------------------------------------------------
   }
   //    ----------------------------------Decrement of 0axis---
 
 
 
   Serial.print("var0 = ");
-  Serial.print(var0);
-  Serial.print(" var1 = ");
-  Serial.print(var1);
+  Serial.print(-var0);
+
 
 
   //    ----------------------------------Stop BLDC---
 
-  if (cnt % 2 == 0)
-  {
+  if (cnt % 2 == 0)// Picking Mechaism
+  { 
     var0 = 0 ;
     var1 = 0 ;
     odrive.SetVelocity(0, var0);
     odrive.SetVelocity(1, -var0);
-    Serial.print(" stop ");
+    //************* Grab R1
+    if (R1 == 1 && load_flag == 0) {
+      load_count++;
+      load_flag = 1;
+    }
+    if (R1 == 0 && load_flag == 1) {
+      load_flag = 0;
+    }
+    //************** Grab R1
+    //************* Motor Pick
+    if ( yellow == 1 || green == 1 ) {
+      if (yellow == 1) {
+        Pick_M = up_speed;
+      }
+      if (green == 1) {
+        Pick_M = down_speed;
+      }
+    }
+    else
+    {
+      Pick_M = 0;
+    }
+    //***************** Motor Pick
+    //***************** Slow Motion
+
+    if (gpad == 0 && slow_flag == 0) {
+      slow_speed_m2 = -m2_speed;
+      slow_speed_m3 = -m3_speed;
+      slow_flag = 1;
+    }
+
+    if (gpad == 4 && slow_opposite_flag == 0) {
+      slow_speed_m2 = m2_speed;
+      slow_speed_m3 = m3_speed;
+      slow_opposite_flag = 1;
+    }
+
+    if (gpad == 2 && slow_side_flag == 0) {
+      slow_speed_m1 = -m1_speed;
+      slow_speed_m2 = m2_speed;
+      slow_speed_m3 = -m3_speed;
+      slow_side_flag = 1;
+    }
+    if (gpad == 6 && slow_opposite_side_flag == 0) {
+      slow_speed_m1 = m1_speed;
+      slow_speed_m2 = -m2_speed;
+      slow_speed_m3 = m3_speed;
+      slow_opposite_side_flag = 1;
+    }
+
+    if (gpad == 9 && (slow_flag = 1 || slow_opposite_flag == 1 || slow_side_flag == 1 || slow_opposite_side_flag == 1))
+    {
+      slow_speed_m1 = 0;
+      slow_speed_m2 = 0;
+      slow_speed_m3 = 0;
+      slow_flag = 0;
+      slow_opposite_flag = 0;
+      slow_side_flag = 0;
+      slow_opposite_side_flag = 0;
+    }
+
+    //******************** Slow Motion
+
+    
+  //************************************* RAMP MODE *******************
+
+  if (back == 1 && flag711 == 0) {
+    cnt3++;
+    flag711 = 1;
+  }
+  Serial.print(" cnt3");
+  Serial.print(cnt3);
+
+  if (back == 0 && flag711 == 1) {
+    flag711 = 0;
+  }
   }
 
 
-  // *************************************** VERTICAL ANGLE ***
 
-  if (back == 1 && flag511 == 0)//Use flag511 for L1
-  {
-    cnt1++;
-    flag511 = 1;
-  }
-  if (back == 0 && flag511 == 1)
-  {
-    flag511 = 0;
-  }
-  Serial.print(" cnt1 ");
-  Serial.print(cnt1);
 
-  if (cnt1 % 2 == 0)
-  {
-    digitalWrite(24, HIGH);
-  }
-  if (cnt1 % 2 == 1)
-  {
-    digitalWrite(24, LOW);
-  }
 
-  // *************************************** CLAW ***
-
-  if (R1 == 1 && flag611 == 0)//Use flag611 for R1
-  {
-    digitalWrite(26, HIGH);
-    flag611 = 1;
-  }
-  if (R1 == 0 && flag611 == 1)
-  {
-    digitalWrite(26, LOW);
-    flag611 = 0;
-  }
-
+  
 
 
   if ( L2 == 1 || R2 == 1 )
   {
-    if ( L2 == 1 )
-    {
-      Base_M = rot_speed ;
-    }
-    if ( R2 == 1 )
-    {
-      Base_M = -rot_speed ;
-    }
+    if ( L2 == 1 )  Base_M = rot_speed ;
+
+    if ( R2 == 1 )  Base_M = -rot_speed ;
+
   }
   else {
     Base_M = 0;
   }
 
-  //  *****************************************  Picking Mechanism
-
-  //  if ((gpad == 2 || gpad == 0 || gpad == 4) && cnt%2 != 1) {
-  //    if (gpad == 0) {
-  //      Pick_M = up_speed;
-  //    }
-  //    if (gpad == 4) {
-  //      Pick_M = down_speed;
-  //    }
-  //    if(gpad == 2 && load_flag == 0)
-  //    {
-  //      load_count++;
-  //      load_flag = 1;
-  //    }
-  //
-  //  }
-  //  else {
-  //    Pick_M = 0;
-  //    load_flag = 0;
-  //  }
-
-
-  
-
- 
   if (load_count % 2 == 0 && load_count != 0) {
     digitalWrite(22, HIGH);
   }
@@ -433,15 +505,10 @@ void loop()
     digitalWrite(22, LOW);
   }
 
-
   // *************************************** ANGLE LOCOMOTION (90)***
-
-
-
-
   //  ============ (90 long button press)
 
-  if (blue == 1 && flag3 == 0 )
+  if (blue == 1 && flag3 == 0 && cnt % 2 != 1)
   { Kp = 16;// 6;//13;;8
     Ki =  0.004;//0.002;//0.003;//0.003
     Kd =  50;//37;//30
@@ -449,16 +516,16 @@ void loop()
     flag3 = 1;
     Serial.print("in 1");
   }
-  if (blue  == 0 &&  flag3 == 1)
-  { Kp = 16;// 6;//13;;8
-    Ki =  0.00;//0.002;//0.003;//0.003
-    Kd =  60;//37;//30
+  if (blue  == 0 &&  flag3 == 1) {
+    //  { Kp = 16;// 6;//13;;8
+    //    Ki =  0.00;//0.002;//0.003;//0.003
+    //    Kd =  60;//37;//30
     flag3 = 0;
     Serial.print("In 2");
 
   }
 
-  if (red == 1 && flag4 == 0 )
+  if (red == 1 && flag4 == 0 && cnt % 2 != 1 )
   {
     Kp = 16;// 6;//13;;8
     Ki =  0.004;//0.002;//0.003;//0.003
@@ -467,47 +534,16 @@ void loop()
     flag4 = 1;
     Serial.print("In 3");
   }
-  if (red == 0 && flag4 == 1)
-  { Kp = 15;// 6;//13;;8
-    Ki =  0.00;//0.002;//0.003;//0.003
-    Kd =  60;//37;//30
+  if (red == 0 && flag4 == 1) {
+    //  { Kp = 15;// 6;//13;;8
+    //    Ki =  0.00;//0.002;//0.003;//0.003
+    //    Kd =  60;//37;//30
     flag4 = 0;
     Serial.print("In 4");
   }
 
-  //************************************* RAMP MODE *******************
 
-  if (yellow == 1 && flag711 == 0) {
-    cnt3++;
-    flag711 = 1;
-  }
-  Serial.print(" cnt3");
-  Serial.print(cnt3);
 
-  if (yellow == 0 && flag711 == 1) {
-    flag711 = 0;
-  }
-
-//  ***************************** SLOW LOCOMOTION ************************
-if(gpad == 4 && slow_flag == 0){
-     slow_speed_m2 = -m2_speed;
-     slow_speed_m3 = -m3_speed;
-     
-     slow_flag = 1;
-}
-if(gpad == 9 && (slow_flag = 1 || slow_opposite_flag == 1))
-{
-  slow_speed_m2 = 0;
-  slow_speed_m3 = 0;
-  slow_flag = 0;
-  slow_opposite_flag = 0;
-}
-
-if(gpad == 0 && slow_opposite_flag == 0){
-  slow_speed_m2 = m2_speed;
-  slow_speed_m3 = m3_speed;
-  slow_opposite_flag = 1;
-}
 
   //************************************* EQUATION OF LOCOMOTION****
 
@@ -521,30 +557,14 @@ if(gpad == 0 && slow_opposite_flag == 0){
   INT = Ki * (incre);
   output = PRO + DER + INT ;
 
-  //    pid = constrain(output , -100,100);
+  if (cnt % 2 == 1 && red_cnt % 2 == 0 )
+    pid = constrain(output , -100, 100);
+
+  if (cnt % 2 == 0 ) pid = constrain(output , -100, 100);
 
 
-  if (green == 1 && green_flag == 0)
-  {
-    green_cnt++;
-    green_flag = 1;
-    Serial.print("In green");
-  }
-  if (green == 0 && green_flag == 1)
-  {
-    green_flag = 0;
-  }
-  Serial.print(" green_cnt: ");
-  Serial.print(green_cnt);
 
-  if (green_cnt % 2 != 0) {
-    pid = 0;
-    Serial.print("| pid is zero |");
-  }
-  if (green_cnt % 2 == 0) {
-    pid = constrain(output, -100, 100);
-    Serial.print("| PID applied |");
-  }
+
 
   M1 =  -(r * (sin((pi / 2 - angle) )) * 1.15);
   M2 =  (r * (sin((7 * pi / 6 - angle) )) * 1.15);
@@ -553,22 +573,19 @@ if(gpad == 0 && slow_opposite_flag == 0){
   M2 = map(M2, 0, 91, 0, 127);
   M3 = map(M3, 0, 91, 0, 127);
   if (cnt3 % 2 == 0 && hor == 0 && ver == 0) {
-    Serial.print("| In 210 constraint |");
+    Serial.print("| In 230 constraint |");
     M1 = map(M1, 0, 91, 0, 230);
     M2 = map(M2, 0, 91, 0, 230);
     M3 = map(M3, 0, 91, 0, 230);
     var_100 = 230;
   }
 
-  if (cnt3 % 2 == 1) {
+  if (cnt3 % 2 == 1  ) {
 
     Serial.print(" In Ramp Mode ");
     M1 = map(M1, 0, 127 , 0, 255);
     M2 = map(M2, 0, 127, 0, 255);
     M3 = map(M3, 0, 127, 0, 255);
-    Kp = 16;
-    Ki = 0.001;
-    Kd = 32;
     var_100 = 160;
 
   }
@@ -611,16 +628,15 @@ if(gpad == 0 && slow_opposite_flag == 0){
   }
   Serial.print("rotation_counter: ");
   Serial.print(rotation_counter);
-  //  Serial.print("rotation_counter");
-  //  Serial.print(rotation
+
   M1 = constrain(M1, -var_100, var_100);
   M2 = constrain(M2, -var_100, var_100);
   M3 = constrain(M3, -var_100, var_100);
 
 
-  m1 =  M1 + pid  + Base_M;//  m1 =  M1 + pid  + Base_M ;
-  m2 = -M2 + pid  + Base_M+slow_speed_m2 ;//m2 = -M2 + pid  + Base_M ;
-  m3 = M3 - pid  - Base_M+slow_speed_m3;//m3 = M3 - pid  - Base_M
+  m1 =  M1 + pid  + Base_M + slow_speed_m1;//  m1 =  M1 + pid  + Base_M + slow_speed_m1 ;
+  m2 = -M2 + pid  + Base_M + slow_speed_m2; //m2 = -M2 + pid  + Base_M + slow_speed_m2;
+  m3 = M3 - pid  - Base_M + slow_speed_m3; //m3 = M3 - pid  - Base_M + slow_speed_m3;
 
 
 
