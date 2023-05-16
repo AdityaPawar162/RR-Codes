@@ -437,9 +437,9 @@ rya = -rya ;
   m3 = M3 - pid   ;
 
  
-  motor1.setSpeed(-m1);
+  motor1.setSpeed(m1);
   motor2.setSpeed(-m2);
-  motor3.setSpeed(m3);
+  motor3.setSpeed(-m3);
 
   Serial.print("\t error=");
   Serial.print( error );
