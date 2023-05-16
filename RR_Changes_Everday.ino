@@ -48,7 +48,7 @@ int M1 , M2 , M3, m1, m2, m3;
 unsigned long timer = 0;
 unsigned long timer1 = 0;
 unsigned long timer2 = 0;
-float timeStep = 0.018998;
+float timeStep = 0.017998;
 float yaw = 0;
 int pre_error = 0;
 int setpoint = 0 ;
@@ -79,6 +79,7 @@ int slow_speed_m3 = 0;
 int m1_speed = 35;
 int m2_speed = 40;
 int m3_speed = 40;
+int yaw_zero_cnt = 0;
 
 
 //______________________________________
@@ -105,9 +106,9 @@ int cnt2 = 0;//locomotion angle
 int cnt3 = 0;//Temp variable
 int cnt4 = 0;
 int red_flag = 0;
-int red_cnt = 0;
+int red_cnt = 0;// Can be taken
 int throw_flag = 0;
-
+int yaw_flag = 0;
 
 //_______________________________________
 
@@ -315,24 +316,6 @@ void loop()
     //********************************************************* BLDC OVER ************************************
     Serial.print(" In start");
 
-    // *******************************************    Yaw Zero Condition ****************************************
-    if (red == 1 && red_flag == 0)
-    {
-      red_cnt++;
-      red_flag = 1;
-    }
-    if (red == 0 && red_flag == 1)
-    {
-      red_flag = 0;
-    }
-    Serial.print(" red_cnt: ");
-    Serial.print(red_cnt);
-
-    if (red_cnt % 2 == 1) {
-      pid = 0;
-      Serial.print("| pid is zero - Start |");
-    }
-
     //******************************************** Grab R1 ******************************************
     if (R1 == 1 && load_flag == 0) {
       load_count++;
@@ -428,14 +411,14 @@ void loop()
     //***************** Slow Motion
 
     if (gpad == 0 && slow_flag == 0) {
-      slow_speed_m2 = -m2_speed;
-      slow_speed_m3 = -m3_speed;
+      slow_speed_m2 = m2_speed;
+      slow_speed_m3 = m3_speed;
       slow_flag = 1;
     }
 
     if (gpad == 4 && slow_opposite_flag == 0) {
-      slow_speed_m2 = m2_speed;
-      slow_speed_m3 = m3_speed;
+      slow_speed_m2 = -m2_speed;
+      slow_speed_m3 = -m3_speed;
       slow_opposite_flag = 1;
     }
 
@@ -509,10 +492,10 @@ void loop()
   //  ============ (90 long button press)
 
   if (blue == 1 && flag3 == 0 && cnt % 2 != 1)
-  { Kp = 16;// 6;//13;;8
+  { Kp = 14;// 6;//13;;8
     Ki =  0.004;//0.002;//0.003;//0.003
-    Kd =  50;//37;//30
-    setpoint = setpoint + 84;
+    Kd =  60;//37;//30
+    setpoint = setpoint + 90;
     flag3 = 1;
     Serial.print("in 1");
   }
@@ -527,10 +510,10 @@ void loop()
 
   if (red == 1 && flag4 == 0 && cnt % 2 != 1 )
   {
-    Kp = 16;// 6;//13;;8
+    Kp = 14;// 6;//13;;8
     Ki =  0.004;//0.002;//0.003;//0.003
-    Kd =  50;//37;//30
-    setpoint = setpoint - 84;
+    Kd =  60;//37;//30
+    setpoint = setpoint - 90;
     flag4 = 1;
     Serial.print("In 3");
   }
@@ -557,11 +540,21 @@ void loop()
   INT = Ki * (incre);
   output = PRO + DER + INT ;
 
-  if (cnt % 2 == 1 && red_cnt % 2 == 0 )
-    pid = constrain(output , -100, 100);
 
-  if (cnt % 2 == 0 ) pid = constrain(output , -100, 100);
+//*************************************   Yaw  Constrained Logic ************************************
 
+if (L1 == 1) {
+    if (yaw_flag == 0) {
+        yaw_zero_cnt++;
+        yaw_flag = 1;
+    }
+} else {
+    if (yaw_flag == 1) {
+        yaw_flag = 0;
+    }
+}
+pid = (1 - (yaw_zero_cnt & 1)) * constrain(output, -100, 100);
+Serial.print((pid == 0) ? "yaw zero" : "yaw constrained");
 
 
 
@@ -586,7 +579,7 @@ void loop()
     M1 = map(M1, 0, 127 , 0, 255);
     M2 = map(M2, 0, 127, 0, 255);
     M3 = map(M3, 0, 127, 0, 255);
-    var_100 = 160;
+    var_100 = 165;
 
   }
 
@@ -640,12 +633,12 @@ void loop()
 
 
 
-  motor1.setSpeed(-m1);
+  motor1.setSpeed(m1);
   motor2.setSpeed(-m2);
-  motor3.setSpeed(m3);
+  motor3.setSpeed(-m3);
 
-  Serial.print("\t lya=");
-  Serial.print( lya );
+  Serial.print("\t L1=");
+  Serial.print( L1 );
   Serial.print(" lxa ");
   Serial.print(lxa);
 
