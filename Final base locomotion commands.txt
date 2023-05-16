@@ -7,6 +7,6 @@ CytronMD motor3(PWM_DIR, 3, 36);
  m2 = -M2 + pid  ;
  m3 = M3 - pid   ;
 
- motor1.setSpeed(-m1);
+ motor1.setSpeed(m1);
  motor2.setSpeed(-m2);
- motor3.setSpeed(m3);
+ motor3.setSpeed(-m3);
