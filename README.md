@@ -1,2 +1,2 @@
 # Arduino
-Contains Robocon 2023 RR Codes,along with the changes and regualar updates.
+Contains Robocon 2023 RR Codes,along with the changes and regular updates.
