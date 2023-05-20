@@ -62,7 +62,7 @@ int Base_M ;
 int rot_speed = 30 ;
 int rotation_counter, rot_counter, rot_flag = 0;
 
-int Pick_M = 0, up_speed = 35, down_speed = -30 ;
+int Pick_M = 0, up_speed = 35, down_speed = -35 ;
 
 int atuate_flag = 0;
 
@@ -73,6 +73,8 @@ int slow_flag = 0;
 int slow_opposite_flag = 0;
 int slow_side_flag = 0;
 int slow_opposite_side_flag = 0;
+
+
 int slow_speed_m1 = 0;
 int slow_speed_m2 = 0;
 int slow_speed_m3 = 0;
@@ -206,29 +208,29 @@ void loop()
   lya = -lya + 127;
   lya = -lya;
 
-  int hor = lxa - 30;
-  int ver = lya - 30;
+  int hor = rxa - 30;
+  int ver = rya - 30;
 
-  if (lxa < 30 && lxa > -31)hor = 0;
-  if (lya < 30 && lya > -31)ver = 0;
+  if (rxa < 30 && rxa > -31)hor = 0;
+  if (rya < 30 && rya > -31)ver = 0;
   if (hor < -30)hor += 60;
   if (ver < -30)ver += 60;
-  hor = map(hor, -128, 128, -45, 45);
-  ver = map(ver, -128, 128, -45, 45);
+  hor = map(hor, -128, 128, -65, 65);
+  ver = map(ver, -128, 128, -65, 65);
 
-  int g = rxa - 30;
-  int h = rya - 30;
-  if (rya < 30 && rya > -31) {
+  int g = lxa - 30;
+  int h = lya - 30;
+  if (lya < 30 && lya > -31) {
     h = 0;
   }
-  if (rya < -30) {
+  if (lya < -30) {
     h = h + 60;
   }
 
-  if (rxa < 30 && rxa > -31) {
+  if (lxa < 30 && lxa > -31) {
     g = 0;
   }
-  if (rxa < -30) {
+  if (lxa < -30) {
     g = g + 60;
   }
   g += hor;
@@ -247,8 +249,8 @@ void loop()
 
 
   if ( start == 1 && flot_auto == 0) {
-    var0 = -20;
-    var1 = 20;
+    var0 = -17;
+    var1 = 17;
     odrive.SetVelocity(0, var0);
     odrive.SetVelocity(1, var1);
     cnt++;
@@ -327,19 +329,21 @@ void loop()
 
     // *************************************** VERTICAL ANGLE ***
 
-    if (back == 1 && flag511 == 0)//Use flag511 for L1
+    if (red == 1 && flag511 == 0)//Use flag511 for L1
     {
       cnt1++;
       flag511 = 1;
     }
-    if (back == 0 && flag511 == 1)
+    if (red == 0 && flag511 == 1)
     {
       flag511 = 0;
     }
     Serial.print(" cnt1 ");
     Serial.print(cnt1);
-    if (cnt1 % 2 == 0)   digitalWrite(24, HIGH);
-    if (cnt1 % 2 == 1)  digitalWrite(24, LOW);
+    if (cnt1 % 2 == 0)  { 
+      Serial.print("vertical");
+      digitalWrite(24, LOW);}
+    if (cnt1 % 2 == 1)  digitalWrite(24, HIGH);
 
     // ***************************************** Motor Pick  *************
     if ( yellow == 1 || green == 1 ) {
@@ -465,11 +469,6 @@ void loop()
 
 
 
-
-
-  
-
-
   if ( L2 == 1 || R2 == 1 )
   {
     if ( L2 == 1 )  Base_M = rot_speed ;
@@ -492,9 +491,9 @@ void loop()
   //  ============ (90 long button press)
 
   if (blue == 1 && flag3 == 0 && cnt % 2 != 1)
-  { Kp = 14;// 6;//13;;8
-    Ki =  0.004;//0.002;//0.003;//0.003
-    Kd =  60;//37;//30
+  { Kp = 15;// 6;//13;;8   //14
+    Ki =  0.00;//0.002;//0.003;//0.003   //0.004
+    Kd =  69;//37;//30               // 60
     setpoint = setpoint + 90;
     flag3 = 1;
     Serial.print("in 1");
@@ -510,9 +509,9 @@ void loop()
 
   if (red == 1 && flag4 == 0 && cnt % 2 != 1 )
   {
-    Kp = 14;// 6;//13;;8
-    Ki =  0.004;//0.002;//0.003;//0.003
-    Kd =  60;//37;//30
+    Kp = 15;// 6;//13;;8
+    Ki =  0.00;//0.002;//0.003;//0.003
+    Kd =  69;//37;//30
     setpoint = setpoint - 90;
     flag4 = 1;
     Serial.print("In 3");
@@ -553,10 +552,8 @@ if (L1 == 1) {
         yaw_flag = 0;
     }
 }
-pid = (1 - (yaw_zero_cnt & 1)) * constrain(output, -100, 100);
+pid = (1 - (yaw_zero_cnt & 1)) * constrain(output, -120, 120);
 Serial.print((pid == 0) ? "yaw zero" : "yaw constrained");
-
-
 
 
   M1 =  -(r * (sin((pi / 2 - angle) )) * 1.15);
@@ -579,16 +576,16 @@ Serial.print((pid == 0) ? "yaw zero" : "yaw constrained");
     M1 = map(M1, 0, 127 , 0, 255);
     M2 = map(M2, 0, 127, 0, 255);
     M3 = map(M3, 0, 127, 0, 255);
-    var_100 = 165;
+    var_100 = 200;
 
   }
 
   if ( rot_flag == 0 && blue != 1 && red != 1 )
   {
 
-    Kp = 24 ;
-    Ki = 0.000001 ;
-    Kd = 35  ;
+    Kp = 25 ;
+    Ki = 0.000000 ;
+    Kd =53  ;
 
   }
 
@@ -658,7 +655,7 @@ Serial.print((pid == 0) ? "yaw zero" : "yaw constrained");
   Serial.print( m3 );
 
   Serial.print("\t kp=");
-  Serial.print( Kp );
+//  Serial.print( kp);
   Serial.print("\t ki=");
   Serial.print(Ki );
   Serial.print("\t kd=");
