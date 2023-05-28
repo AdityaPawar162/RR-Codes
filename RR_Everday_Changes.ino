@@ -81,8 +81,6 @@ template<>        inline Print& operator <<(Print &obj, float arg) {
 HardwareSerial& odrive_serial = Serial3 ;
 ODriveArduino odrive(odrive_serial);
 
-SoftwareSerial SWSerial(NOT_A_PIN, 9);
-SabertoothSimplified ST(SWSerial);
 
 
 
@@ -90,6 +88,7 @@ SabertoothSimplified ST(SWSerial);
 CytronMD motor1(PWM_DIR, 5, 32);
 CytronMD motor2(PWM_DIR, 6, 34);
 CytronMD motor3(PWM_DIR, 7, 36);
+CytronMD motor4(PWM_DIR, 10, 38);
 //************************PID GAINS******************//
 //float Kp ;// 6;//13;;8
 //float Ki ;//0.002;//0.003;//0.003
@@ -116,7 +115,7 @@ int Base_M = 0;
 int rot_speed = 30 ;
 int rotation_counter, rot_counter, rot_flag = 0;
 
-int Pick_M = 0, up_speed = 35, down_speed = -35 ;
+int Pick_M = 0, up_speed = 50, down_speed = -35 ;
 
 int atuate_flag = 0;
 
@@ -133,9 +132,9 @@ int slow_speed_m1 = 0;
 int slow_speed_m2 = 0;
 int slow_speed_m3 = 0;
 int prev = 0;
-int m1_speed = 35;
-int m2_speed = 40;
-int m3_speed = 40;
+int m1_speed = 40;
+int m2_speed = 58;
+int m3_speed = 58;
 //int yaw_zero_cnt = 0;
 
 
@@ -159,18 +158,20 @@ int flag1 = 0; //locomotion angle 5
 int flag2 = 0;
 int flag3 = 0; //locomotion angle 90
 int flag4 = 0;
+int const_flag = 0;
 float var0 , multiplier = 1 , rotate_motor = 0;
 float var1 ;
 int cnt = 0;//For BLDC
 int cnt1 = 1;//For Vertical Angle DCV
 int cnt2 = 0;//locomotion angle
 int cnt3 = 0;//Temp variable
-int cnt4 = 0;
+int cnt4 = 0;// For automatic
 int throw_flag = 0;
 int yaw_flag = 0;
 int k = 0;
-//int red_flag = 0;
+int M4 = 0, M5 = 0, M6 = 0;
 int blue_flag = 0;
+float t = 0;
 
 //_______________________________________
 
@@ -178,7 +179,6 @@ int blue_flag = 0;
 void setup()
 {
   Serial.begin(115200);
-  SWSerial.begin(9600);
   while (!mpu.begin(MPU6050_SCALE_2000DPS, MPU6050_RANGE_2G))
   {
     Serial.println("Could not find a valid MPU6050 sensor, check wiring!");
@@ -225,15 +225,14 @@ void loop()
     k = 0;
   }
 
-  ST.motor(1, Pick_M);
   timer = millis();
   Vector norm = mpu.readNormalizeGyro();
   yaw = yaw + norm.ZAxis * timeStep;
 
   rx = Record.rx ;
   ry = Record.ry ;
-  lx = Record.lx*0.40 ;
-  ly = Record.ly*0.40;
+  lx = Record.lx * 0.40 ;
+  ly = Record.ly * 0.40;
   r1 = Record.r1;
   l1 = Record.l1;
   yellow = Record.yellow ;
@@ -257,52 +256,62 @@ void loop()
 
   //*****************LOCOMOTION******************
 
-
+  motor4.setSpeed(Pick_M);
   Serial.print(" Red = ");
   Serial.print(red);
 
-  if (r1 == 1 && flot_auto == 0) {
-    var0 = 17;
-    odrive.SetVelocity(0, var0);
-    odrive.SetVelocity(1, -var0);
+
+
+
+  //  if (cnt4 % 2 == 1) {
+  //    automatic_path();
+  //    t += 0.00000091;
+  //  }
+
+
+  if (r2 == 1 && flot_auto == 0) {
+    var0 = 25;
+    odrive.SetVelocity(0, -var0);
+    odrive.SetVelocity(1, var0);
     cnt++;
     flot_auto = 1;
   }
-  if (r1 == 0 && flot_auto == 1)flot_auto = 0;
+  if (r2 == 0 && flot_auto == 1)flot_auto = 0;
 
 
   if (cnt % 2 != 0) {
     Serial.print("IN BLDC MODE");
     //    __________________________________________BLDC ADJUSTMENTS _____________________________________________
+
+    if (var0 > 30)var0 = 30;
+
     if (down == 1 && flag11 == 0)
     {
       var0 -= 0.1;
-      odrive.SetVelocity(0, var0);
-      odrive.SetVelocity(1, -var0);
+      odrive.SetVelocity(0, -var0);
+      odrive.SetVelocity(1, var0);
       flag11 = 1;
       //      Serial.print(" Increment of 0axis");
     }
     if (up == 1 && flag12 == 0)
     {
-      var0 += 0.1;
-      odrive.SetVelocity(0, var0);
-      odrive.SetVelocity(1, -var0);
+      odrive_serial << "sr\n";
       flag12 = 1;
-      //      Serial.print(" Decrement of 0axis");
+      //      Serial.print(" reboot");
     }
     if (right == 1 && flag13 == 0)
     {
       var0 += 1;
-      odrive.SetVelocity(0, var0);
-      odrive.SetVelocity(1, -var0);
+      odrive.SetVelocity(0, -var0);
+      odrive.SetVelocity(1, var0);
       flag13 = 1;
       //      Serial.print(" Increment of 1axis");
     }
     if (left == 1 && flag14 == 0)
     {
       var0 -= 1;
-      odrive.SetVelocity(0, var0);
-      odrive.SetVelocity(1, -var0);
+      odrive.SetVelocity(0, -var0);
+      odrive.SetVelocity(1, var0);
       flag14 = 1;
       //      Serial.print(" Decrement of 1axis");
     }
@@ -312,12 +321,12 @@ void loop()
     if (right == 0 && flag13 == 1)   flag13 = 0;
 
     //    _______________________________________________GRAB_____________________________________________
-    if (l1 == 1 && load_flag == 0)
+    if (l2 == 1 && load_flag == 0)
     {
       load_count++;
       load_flag = 1;
     }
-    if (l1 == 0 && load_flag == 1) {
+    if (l2 == 0 && load_flag == 1) {
       load_flag = 0;
     }
     //    _________________________________________________THROW____________________________________________________
@@ -330,7 +339,7 @@ void loop()
       digitalWrite(26, LOW);
       throw_flag = 0;
     }
-  //   ________________________________________________ANGLE CYLINDER ______________________________________
+    //   ________________________________________________ANGLE CYLINDER ______________________________________
     if (red == 1 && flag511 == 0)//Use flag511 for red
     {
       cnt1++;
@@ -358,8 +367,9 @@ void loop()
     if (up == 1 && slow_flag == 0) {
       slow_speed_m2 = -m2_speed;
       slow_speed_m3 = -m3_speed;
+
       slow_flag = 1;
-      multiplier = 1;
+      //      multiplier = 1;
       //      Serial.print("SlowF");
     }
 
@@ -370,57 +380,64 @@ void loop()
       //      Serial.print("SlowD");
     }
 
-    if (right == 1 && slow_side_flag == 0) {
-      slow_speed_m1 = m1_speed;
-      slow_speed_m2 = m2_speed;
-      slow_speed_m3 = -m3_speed;
-      slow_side_flag = 1;
-      //      Serial.print("SlowR");
-    }
+    /*   if (right == 1 && slow_side_flag == 0) {
+         slow_speed_m1 = m1_speed;
+         slow_speed_m2 = m2_speed;
+         slow_speed_m3 = -m3_speed;
+         slow_side_flag = 1;
+         //      Serial.print("SlowR");
+       }
 
-    if (left == 1 && slow_opposite_side_flag == 0) {
-      slow_speed_m1 = -m1_speed;
-      slow_speed_m2 = -m2_speed;
-      slow_speed_m3 = m3_speed;
-      slow_opposite_side_flag = 1;
-      //      Serial.print("SlowL");
-    }
+       if (left == 1 && slow_opposite_side_flag == 0) {
+         slow_speed_m1 = -m1_speed;
+         slow_speed_m2 = -m2_speed;
+         slow_speed_m3 = m3_speed;
+         slow_opposite_side_flag = 1;
+         //      Serial.print("SlowL");
+       }*/
 
-    if ((up == 0 && slow_flag == 1) || (down == 0 &&  slow_opposite_flag == 1 ) || ( right == 0 && slow_side_flag == 1 ) || (left == 0 && slow_opposite_side_flag == 1))
+    if ((up == 0 && slow_flag == 1) || (down == 0 &&  slow_opposite_flag == 1 ))
     {
       slow_speed_m1 = 0;
       slow_speed_m2 = 0;
       slow_speed_m3 = 0;
       slow_flag = 0;
       slow_opposite_flag = 0;
-      slow_side_flag = 0;
-      slow_opposite_side_flag = 0;
+      //      slow_side_flag = 0;
+      //      slow_opposite_side_flag = 0;
 
     }
 
-        //    _______________________________________________GRAB_____________________________________________
-    if (l1 == 1 && load_flag == 0)
+    //    _______________________________________________GRAB_____________________________________________
+    if (l2 == 1 && load_flag == 0)
     {
       load_count++;
       load_flag = 1;
     }
-    if (l1 == 0 && load_flag == 1) {
+    if (l2 == 0 && load_flag == 1) {
       load_flag = 0;
     }
-    
+
   }
 
+
+  /*
+
+    x = 0
+    y = 0   then gains == 0
+
+  */
   //   _______________________________________________ Picking Logic______________________________________
   if (yellow == 1 || green == 1) {
     if (yellow == 1) {
-      Pick_M = 35;
+      Pick_M = -up_speed;
     }
     if (green == 1) {
-      Pick_M = -30;
+      Pick_M = -down_speed;
     }
-    else {
-      Pick_M = 0;
-    }
+  }
+  else {
+    Pick_M = 0;
   }
 
 
@@ -435,51 +452,100 @@ void loop()
 
   //______________________________ Rotate _____________________________________
 
-  if ( l2 == 1  ) {
-    rotate_motor = -30;
-    setpoint = yaw;
-    multiplier = 0;
+  //  if ( l1 == 1  ) {
+  //    rotate_motor = -40;
+  //    setpoint = yaw;
+  //    multiplier = 0;
+  //  }
+  //  else if ( r1 == 1 ) {
+  //    rotate_motor = 40;
+  //    setpoint = yaw;
+  //    multiplier = 0;
+  //  }
+  //  else if ( l1 == 0 && r1 == 0 ) {
+  //    rotate_motor = 0;
+  //    multiplier = 1;
+  //  }
+  if ( l1  == 1 || r1 == 1 )
+  {
+    if ( l1 == 1 )
+    {
+      rotate_motor = -50;
+    }
+    if ( r1 == 1 )
+    {
+      rotate_motor = 50;
+    }
+    Serial.print("in l1/r1");
   }
-  else if ( r2 == 1 ) {
-    rotate_motor = 30;
-    setpoint = yaw;
-    multiplier = 0;
-  }
-  else if ( l2 == 0 && r2 == 0 ) {
+  else {
     rotate_motor = 0;
-    multiplier = 1;
+  }
+//  if ( rot_flag == 0 )
+//  {
+//
+//    kp = 28.5;
+//    ki = 0.00001;
+//    kd = 22.8;
+//
+//  }
+
+  if (rotate_motor != 0 )
+  {
+
+    kp = 0   ;
+    ki = 0   ;
+    kd = 0 ;
+    rot_flag = 1 ;
+    rotation_counter = 0 ;
+
+  }
+
+  if (rotate_motor == 0 && rot_flag == 1 )
+  {
+    rotation_counter  ++ ;
+  }
+
+  if ( rotation_counter == 9 )
+  {
+    setpoint =  yaw ;
+  }
+
+  if ( rotation_counter == 10 )
+  {
+    rot_flag = 0 ;
   }
 
 
 
   //_________________________________90 Degree__________________________________
-  if (red == 1 && red_flag == 0 && cnt % 2 == 0) {
+  if (left == 1 && red_flag == 0 && cnt % 2 == 0) {
     multiplier = 1;
-    setpoint += 90;
+    setpoint += 91;
     red_flag = 1;
   }
-  red_flag = red;
+  red_flag = left;
 
-  if (blue == 1 && blue_flag == 0 && cnt % 2 == 0) {
+  if (right == 1 && blue_flag == 0 && cnt % 2 == 0) {
     multiplier = 1;
-    setpoint -= 90;
+    setpoint -= 91;
     blue_flag = 1;
   }
-  blue_flag = blue;
+  blue_flag = right;
 
 
   ////////////// PID  ///////////////////
   yawError = setpoint - yaw;
   iterm += yawError;
-  if ( yawError > -10 and yawError < 10) {
+  if ( yawError > -8 and yawError < 8) {
     kp = 28.5;
     ki = 0.00001;
     kd = 22.8;
   }
   else {
-    kp = 5.7;
+    kp = 5.5;
     ki = 0.00001;
-    kd = 16;    //    kp = 2.0;
+    kd = 20;    //    kp = 2.0;
     //    ki = 0.0;
     //    kd = 1.5;
   }
@@ -490,13 +556,26 @@ void loop()
 
 
   ////////////////*********EQUATIONS***********////////////////////
-  a = (lx+rx)*(lx+rx) + (ly+ry) * (ly+ry) ;
+  if (blue == 1 && cnt % 2 == 0) {
+
+    rx = -120;
+    ry = 0;
+    Serial.print("In side");
+  }
+  if (red == 1 && cnt % 2 == 0) {
+
+    rx = 0;
+    ry = -120;
+  }
+
+
+  a = (lx + rx) * (lx + rx) + (ly + ry) * (ly + ry) ;
   P  = sqrt(a) ;
   P = constrain(P, 0, 200);
-  float l = atan2(ly+ry, lx+rx);
+  float l = atan2(ly + ry, lx + rx);
   int ang = l * 180 / 3.14;//IN Degree
   ang += yaw;
-  if (((rx < 0 && ry < 0)||(rx > 0 && ry < 0)) || ((lx < 0 && ly < 0) || (lx > 0 && ly < 0)) ){
+  if (((rx < 0 && ry < 0) || (rx > 0 && ry < 0)) || ((lx < 0 && ly < 0) || (lx > 0 && ly < 0)) ) {
     ang = ang + 360;
   }
 
@@ -518,33 +597,28 @@ void loop()
 
 
   int M1 = -m1 * multiplier - rotate_motor + slow_speed_m1;
-  int M2 = m2 * multiplier + rotate_motor + slow_speed_m2;
-  int M3 = -m3 * multiplier - rotate_motor + slow_speed_m3;
+  int   M2 = m2 * multiplier + rotate_motor + slow_speed_m2;
+  int   M3 = -m3 * multiplier - rotate_motor + slow_speed_m3;
 
-  //  Serial.print(" Rx = ");
-  //  Serial.print(rx);
-  //  Serial.print("   Ry = ");
-  //  Serial.print(ry);
-  Serial.print(" left= ");
-  Serial.print(left);
-  Serial.print("   right = ");
-  Serial.print(right);
-  Serial.print(" l1 = ");
-  Serial.print(l1);
-  Serial.print(" r1 = ");
-  Serial.print(r1);
-  //  Serial.print("k");
-  //  Serial.print(k);
-  Serial.print("  M1 ");
-  Serial.print(M1);
+
+  Serial.print(" rx = ");
+  Serial.print(rx);
+  Serial.print(" ry = ");
+  Serial.print(ry);
+  Serial.print(" a = ");
+  Serial.print(a);
+  Serial.print(" p = ");
+  Serial.print(P);
+  Serial.print("  angle ");
+  Serial.print(ang);
   Serial.print(" ");
   Serial.print(M1);
   Serial.print("  M2 ");
   Serial.print(M2);
   Serial.print("  M3 ");
-  Serial.println(M3);
-  Serial.print("Setpoint = ");
-  Serial.print(setpoint);
+  Serial.print(M3);
+  Serial.print("Blue = ");
+  Serial.print(blue);
   Serial.print("Yaw ");
   Serial.print(yaw);
   Serial.print(" PID = ");
@@ -557,8 +631,20 @@ void loop()
   Serial.print(ki);
   Serial.print("multiplier");
   Serial.print(multiplier);
-
-
+  Serial.print("Setpoint = ");
+  Serial.print(setpoint);
+  Serial.print("Yaw ");
+  Serial.print(yaw);
+  Serial.print(" rotation_counter = ");
+  Serial.print(rotation_counter);
+  Serial.print(" rot_flag =");
+  Serial.print(rot_flag);
+  Serial.print(" Base_M = ");
+  Serial.print(Base_M);
+  //    Serial.print("Ki");
+  //    Serial.print(ki);
+  //  Serial.print("multiplier");
+  //  Serial.print(multiplier);
 
 
   motor1.setSpeed(M1);
@@ -568,6 +654,6 @@ void loop()
 
 
 
-  //  Serial.println();
+  Serial.println();
 
 }
